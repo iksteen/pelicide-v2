@@ -95,3 +95,6 @@ ENV/
 
 # IDEA project files
 .idea
+
+# UI artefacts
+pelicide/ui/
