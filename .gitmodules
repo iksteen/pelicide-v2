@@ -1,0 +1,3 @@
+[submodule "pelicide-ui"]
+	path = pelicide-ui
+	url = ssh://git@git.thegraveyard.org:44322/pelicide/pelicide-ui.git

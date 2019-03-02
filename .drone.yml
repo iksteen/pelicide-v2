@@ -1,0 +1,7 @@
+pipeline:
+  codestyle37:
+    image: python:3.7
+    commands:
+      - pip install poetry
+      - poetry install
+      - poetry run pre-commit run -a
