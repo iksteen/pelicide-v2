@@ -266,7 +266,7 @@ def run(config_file, init_settings):
                         status = "draft"
                     project_contents.append(
                         {
-                            "dir": subdir.split(os.sep) if subdir else [],
+                            "path": subdir.split(os.sep) if subdir else [],
                             "name": filename,
                             "type": type_name,
                             "url": url,
@@ -275,7 +275,7 @@ def run(config_file, init_settings):
                             "mimetype": mimetypes.guess_type(filename)[0],
                         }
                     )
-                success(cmd_id, project_contents)
+                success(cmd_id, {"content": project_contents})
             except Exception as e:
                 logger.exception("Scan failed:")
                 fail(cmd_id, repr(e))

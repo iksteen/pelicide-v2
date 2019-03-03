@@ -87,7 +87,7 @@ class Runner:
     settings: Optional[RunnerData] = None
 
     def __init__(
-        self, interpreter: str, pelicanconf: str, init_settings: Dict[str, str]
+        self, interpreter: str, pelicanconf: str, init_settings: Dict[str, Any]
     ) -> None:
         self.interpreter = interpreter
         self.pelicanconf = pelicanconf
