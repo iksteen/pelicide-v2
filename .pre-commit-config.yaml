@@ -14,6 +14,7 @@ repos:
     - --force-grid-wrap=0
     - --combine-as
     - --line-width=88
+    exclude: ^pelicide/pelican-runner.py
 
 - repo: https://github.com/ambv/black
   rev: 18.9b0
@@ -36,6 +37,7 @@ repos:
     - --warn-redundant-casts
     - --warn-unused-ignores
     - --warn-return-any
+    exclude: ^pelicide/pelican-runner.py
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v2.1.0
@@ -45,3 +47,4 @@ repos:
     - --max-line-length=80
     - --select=C,E,F,W,B,B950
     - --ignore=E501,W503,E203
+    exclude: ^pelicide/pelican-runner.py
