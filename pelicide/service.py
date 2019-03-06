@@ -104,7 +104,7 @@ async def get_file_content(
     try:
         validate(params, GET_FILE_CONTENT_PARAMS_SCHEMA)
     except ValidationError:
-        logger.exception("Invalid params for scan method:")
+        logger.exception("Invalid params for get_file_content method:")
         raise RpcInvalidParamsError()
 
     site = sites.get(params["site_id"])
@@ -112,8 +112,15 @@ async def get_file_content(
         logger.error("Client request non-existent site %s.", params["site_id"])
         raise RpcInvalidParamsError(message="Site does not exist.")
 
-    root = pathlib.Path(cast(dict, site.runner.settings)[params["anchor"].upper()])
+    root = pathlib.Path(
+        cast(dict, site.runner.settings)[params["anchor"].upper()]
+    ).resolve()
     path = root.joinpath(*params["path"], params["name"])
+    try:
+        path.resolve().relative_to(root)
+    except ValueError:
+        raise RpcFileNotFound()
+
     try:
         async with aiofiles.open(str(path)) as f:
             return {"content": await f.read()}
