@@ -35,6 +35,18 @@ GET_FILE_CONTENT_PARAMS_SCHEMA = {
     "required": ["site_id", "anchor", "path", "name"],
 }
 
+PUT_FILE_CONTENT_PARAMS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "site_id": {"type": "string"},
+        "anchor": {"type": "string", "enum": ["content", "theme"]},
+        "path": {"type": "array", "items": {"type": "string"}},
+        "name": {"type": "string"},
+        "content": {"type": "string"},
+    },
+    "required": ["site_id", "anchor", "path", "name", "content"],
+}
+
 
 class RpcSiteNotFound(RpcGenericServerDefinedError):
     ERROR_CODE = 1
@@ -128,9 +140,44 @@ async def get_file_content(
         raise RpcFileNotFound()
 
 
+@inject  # type: ignore
+async def put_file_content(request: JsonRpcRequest, *, sites: SiteDirectory) -> None:
+    params = request.params
+    try:
+        validate(params, PUT_FILE_CONTENT_PARAMS_SCHEMA)
+    except ValidationError:
+        logger.exception("Invalid params for put_file_content method:")
+        raise RpcInvalidParamsError()
+
+    site = sites.get(params["site_id"])
+    if site is None:
+        logger.error("Client request non-existent site %s.", params["site_id"])
+        raise RpcInvalidParamsError(message="Site does not exist.")
+
+    root = pathlib.Path(
+        cast(dict, site.runner.settings)[params["anchor"].upper()]
+    ).resolve()
+    path = root.joinpath(*params["path"], params["name"])
+    try:
+        path.resolve().relative_to(root)
+    except ValueError:
+        raise RpcFileNotFound()
+
+    try:
+        async with aiofiles.open(str(path), "w") as f:
+            await f.write(params["content"])
+    except FileNotFoundError:
+        raise RpcFileNotFound()
+
+
 def rpc_factory() -> JsonRpc:
     rpc = JsonRpc()
 
-    rpc.add_methods(("", list_sites), ("", list_site_files), ("", get_file_content))
+    rpc.add_methods(
+        ("", list_sites),
+        ("", list_site_files),
+        ("", get_file_content),
+        ("", put_file_content),
+    )
 
     return rpc
