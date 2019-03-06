@@ -16,9 +16,15 @@ if __name__ == "__main__":
     os.chdir(os.path.dirname(sys.argv[1]))
 
 
-import jinja2.filters
-from pelican import Readers, contents, get_instance, signals, urlwrappers
-from pelican.log import init as log_init
+import jinja2.filters  # noqa:E402 isort:skip
+from pelican import (  # noqa:E402 isort:skip
+    Readers,
+    contents,
+    get_instance,
+    signals,
+    urlwrappers,
+)
+from pelican.log import init as log_init  # noqa:E402 isort:skip
 
 try:
     from pelican.readers import _DISCARD

@@ -19,6 +19,7 @@ aiofiles = "^0.4.0"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^1.14"
+invoke = "^1.2"
 
 [tool.poetry.scripts]
 pelicide = 'pelicide.__main__:main'
