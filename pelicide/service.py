@@ -63,7 +63,11 @@ async def list_sites(
     request: JsonRpcRequest, *, sites: SiteDirectory
 ) -> Iterable[Dict[str, str]]:
     return [
-        {"id": site_id, "name": cast(dict, site.runner.settings)["SITENAME"]}
+        {
+            "id": site_id,
+            "name": cast(dict, site.runner.settings)["SITENAME"],
+            "formats": cast(dict, site.runner.settings)["FORMATS"],
+        }
         for site_id, site in sites.items()
     ]
 

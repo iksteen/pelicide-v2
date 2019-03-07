@@ -216,19 +216,15 @@ def run(config_file, init_settings):
 
     logging.info("Initialised pelican engine.")
 
-    sys.stdout.write(
-        "0 + %s\n"
-        % json.dumps(
-            {
-                output_key: settings.get(key)
-                for output_key, key in {
-                    "SITENAME": "SITENAME",
-                    "CONTENT": "PATH",
-                    "THEME": "THEME",
-                }.items()
-            }
-        )
-    )
+    runner_settings = {"FORMATS": list(readers.readers.keys())}
+    for output_key, key in {
+        "SITENAME": "SITENAME",
+        "CONTENT": "PATH",
+        "THEME": "THEME",
+    }.items():
+        runner_settings[output_key] = settings.get(key)
+
+    sys.stdout.write("0 + %s\n" % json.dumps(runner_settings))
     sys.stdout.flush()
 
     while True:
