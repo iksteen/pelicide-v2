@@ -23,7 +23,7 @@ poetry run invoke build-ui
 Step 4: Install pelican and common plugins.
 
 ```
-poetry run pip install pelican Markdown typogrify
+poetry run pip install pelican 'Markdown<3' typogrify
 ```
 
 Step 5: Run pelicide.
