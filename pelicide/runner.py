@@ -9,6 +9,7 @@ import pkg_resources
 
 logger = logging.getLogger(__name__)
 
+RunnerArgs = Optional[Iterable[str]]
 RunnerData = Optional[Dict[str, Any]]
 
 
@@ -74,7 +75,7 @@ class RunnerProcess:
         for task in pending.values():
             task.set_exception(RunnerExitedException())
 
-    async def __call__(self, command: str, args: RunnerData) -> RunnerData:
+    async def __call__(self, command: str, args: RunnerArgs) -> RunnerData:
         args_json = json.dumps(args)
         f = self.loop.create_future()
         await self.queue.put((command, args_json, f))
@@ -134,7 +135,7 @@ class Runner:
         except:  # noqa: E722
             logger.exception("Runner exited with error:")
 
-    async def command(self, command: str, args: RunnerData = None) -> RunnerData:
+    async def command(self, command: str, args: RunnerArgs = None) -> RunnerData:
         if self.process is not None:
             return await self.process(command, args)
         else:
