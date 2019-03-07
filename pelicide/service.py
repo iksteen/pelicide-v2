@@ -47,6 +47,16 @@ PUT_FILE_CONTENT_PARAMS_SCHEMA = {
     "required": ["site_id", "anchor", "path", "name", "content"],
 }
 
+RENDER_PARAMS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "site_id": {"type": "string"},
+        "format": {"type": "string"},
+        "content": {"type": "string"},
+    },
+    "required": ["site_id", "format", "content"],
+}
+
 
 class RpcSiteNotFound(RpcGenericServerDefinedError):
     ERROR_CODE = 1
@@ -56,6 +66,11 @@ class RpcSiteNotFound(RpcGenericServerDefinedError):
 class RpcFileNotFound(RpcGenericServerDefinedError):
     ERROR_CODE = 2
     MESSAGE = "File not found"
+
+
+class RpcFormatNotSupported(RpcGenericServerDefinedError):
+    ERROR_CODE = 3
+    MESSAGE = "Format not supported"
 
 
 def validate_params(request: JsonRpcRequest, schema: Dict[str, Any]) -> Dict[str, Any]:
@@ -161,6 +176,17 @@ async def put_file_content(request: JsonRpcRequest) -> None:
         raise RpcFileNotFound()
 
 
+async def render(request: JsonRpcRequest) -> Dict[str, Any]:
+    params, site = validate_and_get_site(request, RENDER_PARAMS_SCHEMA)
+
+    settings = cast(dict, site.runner.settings)
+    if not params["format"] in settings["FORMATS"]:
+        raise RpcFormatNotSupported()
+
+    content = await site.runner.command("render", [params["format"], params["content"]])
+    return cast(dict, content)
+
+
 def rpc_factory() -> JsonRpc:
     rpc = JsonRpc()
 
@@ -169,6 +195,7 @@ def rpc_factory() -> JsonRpc:
         ("", list_site_files),
         ("", get_file_content),
         ("", put_file_content),
+        ("", render),
     )
 
     return rpc
