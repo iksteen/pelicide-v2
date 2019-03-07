@@ -2,7 +2,7 @@ import asyncio
 import logging
 import mimetypes
 import pathlib
-from typing import Any, Dict, Iterable, cast
+from typing import Any, Dict, Iterable, Tuple, cast
 
 import aiofiles
 from aiohttp_json_rpc import (
@@ -13,7 +13,7 @@ from aiohttp_json_rpc import (
 from aiohttp_json_rpc.communicaton import JsonRpcRequest
 from jsonschema import ValidationError, validate
 
-from pelicide.sites import SiteDirectory
+from pelicide.sites import Site, SiteDirectory
 from pelicide.util import inject
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 LIST_SITE_FILES_PARAMS_SCHEMA = {
     "type": "object",
     "properties": {"id": {"type": "string"}},
-    "required": ["id"],
+    "required": ["site_id"],
 }
 
 GET_FILE_CONTENT_PARAMS_SCHEMA = {
@@ -58,13 +58,35 @@ class RpcFileNotFound(RpcGenericServerDefinedError):
     MESSAGE = "File not found"
 
 
+def validate_params(request: JsonRpcRequest, schema: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        validate(request.params, schema)
+    except ValidationError:
+        logger.exception(f"Invalid params for method:")
+        raise RpcInvalidParamsError()
+
+    return cast(Dict[str, Any], request.params)
+
+
+@inject  # type:ignore
+def validate_and_get_site(
+    request: JsonRpcRequest, schema: Dict[str, Any], *, sites: SiteDirectory
+) -> Tuple[Dict[str, Any], Site]:
+    params = validate_params(request, schema)
+    site = sites.get(params["site_id"])
+    if site is None:
+        logger.error("Client request non-existent site %s.", params["site_id"])
+        raise RpcInvalidParamsError(message="Site does not exist.")
+    return params, site
+
+
 @inject  # type: ignore
 async def list_sites(
     request: JsonRpcRequest, *, sites: SiteDirectory
 ) -> Iterable[Dict[str, str]]:
     return [
         {
-            "id": site_id,
+            "site_id": site_id,
             "name": cast(dict, site.runner.settings)["SITENAME"],
             "formats": cast(dict, site.runner.settings)["FORMATS"],
         }
@@ -72,9 +94,8 @@ async def list_sites(
     ]
 
 
-@inject  # type: ignore
 async def list_site_files(
-    request: JsonRpcRequest, *, sites: SiteDirectory
+    request: JsonRpcRequest
 ) -> Dict[str, Iterable[Dict[str, Any]]]:
     def list_theme_files(theme: str) -> Iterable[Dict[str, Any]]:
         path = pathlib.Path(theme)
@@ -89,17 +110,7 @@ async def list_site_files(
             if file.is_file()
         ]
 
-    params = request.params
-    try:
-        validate(params, LIST_SITE_FILES_PARAMS_SCHEMA)
-    except ValidationError:
-        logger.exception("Invalid params for list_site_files method:")
-        raise RpcInvalidParamsError()
-
-    site = sites.get(params["id"])
-    if site is None:
-        logger.error("Client request non-existent site %s.", params["site_id"])
-        raise RpcSiteNotFound()
+    params, site = validate_and_get_site(request, LIST_SITE_FILES_PARAMS_SCHEMA)
 
     loop = asyncio.get_event_loop()
     content, theme = await asyncio.gather(
@@ -112,21 +123,8 @@ async def list_site_files(
     return {"content": cast(dict, content)["content"], "theme": theme}
 
 
-@inject  # type: ignore
-async def get_file_content(
-    request: JsonRpcRequest, *, sites: SiteDirectory
-) -> Dict[str, str]:
-    params = request.params
-    try:
-        validate(params, GET_FILE_CONTENT_PARAMS_SCHEMA)
-    except ValidationError:
-        logger.exception("Invalid params for get_file_content method:")
-        raise RpcInvalidParamsError()
-
-    site = sites.get(params["site_id"])
-    if site is None:
-        logger.error("Client request non-existent site %s.", params["site_id"])
-        raise RpcInvalidParamsError(message="Site does not exist.")
+async def get_file_content(request: JsonRpcRequest) -> Dict[str, str]:
+    params, site = validate_and_get_site(request, GET_FILE_CONTENT_PARAMS_SCHEMA)
 
     root = pathlib.Path(
         cast(dict, site.runner.settings)[params["anchor"].upper()]
@@ -144,19 +142,8 @@ async def get_file_content(
         raise RpcFileNotFound()
 
 
-@inject  # type: ignore
-async def put_file_content(request: JsonRpcRequest, *, sites: SiteDirectory) -> None:
-    params = request.params
-    try:
-        validate(params, PUT_FILE_CONTENT_PARAMS_SCHEMA)
-    except ValidationError:
-        logger.exception("Invalid params for put_file_content method:")
-        raise RpcInvalidParamsError()
-
-    site = sites.get(params["site_id"])
-    if site is None:
-        logger.error("Client request non-existent site %s.", params["site_id"])
-        raise RpcInvalidParamsError(message="Site does not exist.")
+async def put_file_content(request: JsonRpcRequest) -> None:
+    params, site = validate_and_get_site(request, PUT_FILE_CONTENT_PARAMS_SCHEMA)
 
     root = pathlib.Path(
         cast(dict, site.runner.settings)[params["anchor"].upper()]
