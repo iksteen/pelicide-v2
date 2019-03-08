@@ -40,6 +40,20 @@ def host_header_verifier_factory(
     return cast(_Middleware, host_header_verifier)
 
 
+@web.middleware  # type: ignore
+async def site_nocache(request: web.Request, handler: _Handler) -> web.StreamResponse:
+    response = await handler(request)
+    if request.path.startswith("/site/") and isinstance(response, web.FileResponse):
+        response.headers.update(
+            {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            }
+        )
+    return response
+
+
 @click.command()
 @click.option(
     "-h", "--host", default="127.0.0.1", help="Interface to run the service on."
@@ -60,7 +74,9 @@ def main(
     else:
         valid_hostnames = hostnames.split(",")
 
-    app = web.Application(middlewares=[host_header_verifier_factory(valid_hostnames)])
+    app = web.Application(
+        middlewares=[host_header_verifier_factory(valid_hostnames), site_nocache]
+    )
     app["static_path"] = static_path = pkg_resources.resource_filename(
         __package__, "ui"
     )
