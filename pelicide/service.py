@@ -57,6 +57,29 @@ RENDER_PARAMS_SCHEMA = {
     "required": ["site_id", "format", "content"],
 }
 
+BUILD_PARAMS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "site_id": {"type": "string"},
+        "paths": {
+            "anyOf": [
+                {"type": "null"},
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": [
+                            {"type": "array", "items": {"type": "string"}},
+                            {"type": "string"},
+                        ],
+                    },
+                },
+            ]
+        },
+    },
+    "required": ["site_id"],
+}
+
 
 class RpcSiteNotFound(RpcGenericServerDefinedError):
     ERROR_CODE = 1
@@ -187,6 +210,11 @@ async def render(request: JsonRpcRequest) -> Dict[str, Any]:
     return cast(dict, content)
 
 
+async def build(request: JsonRpcRequest) -> None:
+    params, site = validate_and_get_site(request, BUILD_PARAMS_SCHEMA)
+    await site.runner.command("build", params.get("paths"))
+
+
 def rpc_factory() -> JsonRpc:
     rpc = JsonRpc()
 
@@ -196,6 +224,7 @@ def rpc_factory() -> JsonRpc:
         ("", get_file_content),
         ("", put_file_content),
         ("", render),
+        ("", build),
     )
 
     return rpc
