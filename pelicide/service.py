@@ -127,6 +127,10 @@ async def list_sites(
             "site_id": site_id,
             "name": cast(dict, site.runner.settings)["SITENAME"],
             "formats": cast(dict, site.runner.settings)["FORMATS"],
+            "content": cast(dict, site.runner.settings)["CONTENT"],
+            "articles": cast(dict, site.runner.settings)["ARTICLES"],
+            "pages": cast(dict, site.runner.settings)["PAGES"],
+            "theme": cast(dict, site.runner.settings)["THEME"],
         }
         for site_id, site in sites.items()
     ]

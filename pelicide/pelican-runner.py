@@ -220,6 +220,8 @@ def run(config_file, init_settings):
     for output_key, key in {
         "SITENAME": "SITENAME",
         "CONTENT": "PATH",
+        "ARTICLES": "ARTICLE_PATHS",
+        "PAGES": "PAGE_PATHS",
         "THEME": "THEME",
     }.items():
         runner_settings[output_key] = settings.get(key)
