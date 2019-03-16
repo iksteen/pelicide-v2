@@ -80,6 +80,12 @@ BUILD_PARAMS_SCHEMA = {
     "required": ["site_id"],
 }
 
+SLUGIFY_PARAMS_SCHEMA = {
+    "type": "object",
+    "properties": {"site_id": {"type": "string"}, "title": {"type": "string"}},
+    "required": ["site_id", "title"],
+}
+
 
 class RpcSiteNotFound(RpcGenericServerDefinedError):
     ERROR_CODE = 1
@@ -219,6 +225,12 @@ async def build(request: JsonRpcRequest) -> None:
     await site.runner.command("build", params.get("paths"))
 
 
+async def slugify(request: JsonRpcRequest) -> Dict[str, str]:
+    params, site = validate_and_get_site(request, SLUGIFY_PARAMS_SCHEMA)
+    result = await site.runner.command("slugify", [params["title"]])
+    return cast(dict, result)
+
+
 def rpc_factory() -> JsonRpc:
     rpc = JsonRpc()
 
@@ -229,6 +241,7 @@ def rpc_factory() -> JsonRpc:
         ("", put_file_content),
         ("", render),
         ("", build),
+        ("", slugify),
     )
 
     return rpc

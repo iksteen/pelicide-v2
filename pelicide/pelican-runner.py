@@ -25,6 +25,7 @@ from pelican import (  # noqa:E402 isort:skip
     urlwrappers,
 )
 from pelican.log import init as log_init  # noqa:E402 isort:skip
+from pelican.utils import slugify  # noqa:E402 isort:skip
 
 try:
     from pelican.readers import _DISCARD
@@ -307,6 +308,11 @@ def run(config_file, init_settings):
             except Exception as e:
                 logger.exception("Render failed:")
                 fail(cmd_id, repr(e))
+        elif cmd == "slugify":
+            slug = slugify(
+                args[0], regex_subs=settings.get("SLUG_REGEX_SUBSTITUTIONS", [])
+            )
+            success(cmd_id, {"slug": slug})
         elif cmd == "exec":
             try:
                 os.system("%s 1>&2" % args[0])
